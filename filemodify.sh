@@ -17,6 +17,14 @@ sed -i '/# Install additional packages/i\RUN sed -i "s/#PasswordAuthentication n
 sed -i '/# Install additional packages/i\RUN mkdir -p /run/sshd' Dockerfile
 sed -i '/# Install additional packages/i\\n' Dockerfile
 
+# Copy config
+sed -i '/CONF_SRC=\/usr\/src\/app\/conf/i\CONF_DEBUG=\/usr\/src\/app\/config' dockerStart.sh
+sed -i '/#install user-specific packages/i\# copy volumed conf to debug config' dockerStart.sh
+sed -i '/#install user-specific packages/i\if [ -f $CONF/appdaemon.yaml ]; then' dockerStart.sh
+sed -i '/#install user-specific packages/i\  cp -r $CONF $CONF_DEBUG' dockerStart.sh
+sed -i '/#install user-specific packages/i\fi' dockerStart.sh
+sed -i '/#install user-specific packages/i\\n' dockerStart.sh
+
 # Change entrypoint
 sed -i 's/appdaemon -c $CONF/\/usr\/sbin\/sshd -D/' dockerStart.sh
 sed -i '/#install user-specific packages/i\# if ENV SSHPASSWORD is set, change root password for ssh' dockerStart.sh

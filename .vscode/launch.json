@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/debug.py", //运行AD
             "console": "integratedTerminal",
-            "args": ["-c", "/conf"], //指定配置文件
+            "args": ["-c", "config"], //指定配置文件
         }
     ]
 }
