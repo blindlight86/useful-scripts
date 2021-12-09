@@ -23,9 +23,3 @@ sed -i '/#install user-specific packages/i\if \[ -n "$SSHPASSWORD" \]; then' doc
 sed -i '/#install user-specific packages/i\  echo root:$SSHPASSWORD | chpasswd' dockerStart.sh
 sed -i '/#install user-specific packages/i\fi' dockerStart.sh
 sed -i '/#install user-specific packages/i\\n' dockerStart.sh
-
-# do not ignore debug launch.json
-# sed -i '$a\!.vscode' ./appdaemon/.git_ignore
-# sed -i '$a\!.vscode/launch.json' ./appdaemon/.git_ignore
-# sed -i '$a\!.vscode' .git_ignore
-# sed -i '$a\!.vscode/launch.json' .git_ignore
