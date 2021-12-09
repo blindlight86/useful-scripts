@@ -14,6 +14,7 @@ sed -i '/# Install additional packages/i\# Install ssh' Dockerfile
 sed -i '/# Install additional packages/i\RUN apt install -y openssh-server' Dockerfile
 sed -i '/# Install additional packages/i\RUN sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/" /etc/ssh/sshd_config' Dockerfile
 sed -i '/# Install additional packages/i\RUN sed -i "s/#PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config' Dockerfile
+sed -i '/# Install additional packages/i\RUN mkdir -p /run/sshd' Dockerfile
 sed -i '/# Install additional packages/i\\n' Dockerfile
 
 # Change entrypoint
