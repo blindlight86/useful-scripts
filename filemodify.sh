@@ -23,3 +23,7 @@ sed -i '/#install user-specific packages/i\if \[ -n "$SSHPASSWORD" \]; then' doc
 sed -i '/#install user-specific packages/i\  echo root:$SSHPASSWORD | chpasswd' dockerStart.sh
 sed -i '/#install user-specific packages/i\fi' dockerStart.sh
 sed -i '/#install user-specific packages/i\\n' dockerStart.sh
+
+# Add launch.json
+sed -i '/COPY . ./a\COPY launch.json ./appdaemon/.vscode/launch.json' Dockerfile
+sed -i '/COPY . ./a\RUN mkdir -p ./appdaemon/.vscode' Dockerfile
