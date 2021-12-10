@@ -32,3 +32,10 @@ sed -i '/#install user-specific packages/i\if \[ -n "$SSHPASSWORD" \]; then' doc
 sed -i '/#install user-specific packages/i\  echo root:$SSHPASSWORD | chpasswd' dockerStart.sh
 sed -i '/#install user-specific packages/i\fi' dockerStart.sh
 sed -i '/#install user-specific packages/i\\n' dockerStart.sh
+
+sed -i '/#install user-specific packages/i\# if ENV RSA_PUB is set, copy file' dockerStart.sh
+sed -i '/#install user-specific packages/i\if \[ -n "$RSA_PUB" \]; then' dockerStart.sh
+sed -i '/#install user-specific packages/i\  mkdir -p ~\/.ssh && chmod 700 ~\/.ssh' dockerStart.sh
+sed -i '/#install user-specific packages/i\  cp $CONF\/$RSA_PUB ~\/.ssh\/authorized_keys && chmod 600  ~\/.ssh\/authorized_keys' dockerStart.sh
+sed -i '/#install user-specific packages/i\fi' dockerStart.sh
+sed -i '/#install user-specific packages/i\\n' dockerStart.sh
