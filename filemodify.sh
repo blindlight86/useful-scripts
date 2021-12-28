@@ -26,7 +26,10 @@ sed -i '/#install user-specific packages/i\fi' dockerStart.sh
 sed -i '/#install user-specific packages/i\\n' dockerStart.sh
 
 # Change entrypoint
-sed -i 's/appdaemon -c $CONF/\/usr\/sbin\/sshd -D/' dockerStart.sh
+sed -i '/appdaemon -c $CONF/i\if \[ -n "$DAEMON" \]; then' dockerStart.sh
+sed -i '/appdaemon -c $CONF/a\fi' dockerStart.sh
+sed -i '/appdaemon -c $CONF/a\/usr\/sbin\/sshd -D "$@"' dockerStart.sh
+sed -i '/appdaemon -c $CONF/a\else' dockerStart.sh
 sed -i '/#install user-specific packages/i\# if ENV SSHPASSWORD is set, change root password for ssh' dockerStart.sh
 sed -i '/#install user-specific packages/i\if \[ -n "$SSHPASSWORD" \]; then' dockerStart.sh
 sed -i '/#install user-specific packages/i\  echo root:$SSHPASSWORD | chpasswd' dockerStart.sh
