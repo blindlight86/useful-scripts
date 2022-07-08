@@ -1,0 +1,378 @@
+version: '3.3'
+services:
+  # basic service
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+      # if you want to access data from the host, you can use the host_path option
+      # - ./portainer_data:/data
+    restart: always
+    ports:
+      - 8999:8000
+      - 9888:9000
+  
+  zabbix-agent: # zabbix agent node
+    container_name: zabbix-agent
+    image: zabbix/zabbix-agent2
+    restart: unless-stopped
+    environment:
+      - ZBX_HOSTNAME=OpenWRT
+      - ZBX_SERVER_HOST=10.0.0.78
+    ports:
+      - "10050:10050"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
+    pid: "host"
+
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -c --interval ${WATCHINTERVAL} ${WATCHCONTAINER}
+
+  # download and media
+  jackett: # indexer
+    container_name: jackett
+    image: linuxserver/jackett
+    restart: unless-stopped
+    volumes:
+      - ./jackett:/config
+    ports:
+      - 9117:9117
+    environment:
+      - TZ=Asia/Shanghai
+
+  prowlarr: # indexer
+    image: lscr.io/linuxserver/prowlarr:develop
+    container_name: prowlarr
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./prowlarr:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  sonarr: # tv grabber
+    container_name: sonarr
+    image: linuxserver/sonarr
+    restart: unless-stopped
+    ports:
+      - 8989:8989
+    volumes:
+      - ./sonarr:/config
+      - smbornfsdata:/data
+    environment:
+      - TZ=Asia/Shanghai
+
+  radarr: # movie grabber
+    image: linuxserver/radarr
+    container_name: radarr
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./radarr:/config
+      - smbornfsdata:/data
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+  
+  whisparr: # porn grabber
+    container_name: whisparr
+    image: hotio/whisparr:nightly # switch to linuxserver.io if available
+    restart: unless-stopped
+    ports:
+      - "6969:6969"
+    volumes:
+      - ./whisparr:/config
+      - smbornfsdata:/data
+    environment:
+      - TZ=Asia/Shanghai
+
+  qbittorrent:
+    container_name: qbittorrent
+    image: linuxserver/qbittorrent
+    restart: unless-stopped
+    volumes:
+      - ./qbittorrent:/config
+      - smbornfsdata:/data
+    ports:
+      - 51414:51414
+      - 51414:51414/udp
+      - 8787:8787
+    environment:
+      - TZ=Asia/Shanghai
+      - WEBUI_PORT=8787
+
+  qbit_manage: # qbit manage
+    container_name: qbit_manage
+    image: bobokun/qbit_manage
+    restart: unless-stopped
+    volumes:
+      - ./qbit_manage:/config
+
+  Movie_Data_Capture: # JAV sorting tool
+    image: vergilgao/mdc:latest
+    container_name: Movie_Data_Capture
+    volumes:
+      - smbornfsdata:/data
+      - ./mdc/config:/config
+
+  stash: # porn organizer
+    image: stashapp/stash:latest
+    container_name: stash
+    restart: unless-stopped
+    ## the container's port must be the same with the STASH_PORT in the environment section
+    ports:
+      - "9999:9999"
+    ## If you intend to use stash's DLNA functionality uncomment the below network mode and comment out the above ports section
+    # network_mode: host
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "10"
+        max-size: "2m"
+    environment:
+      - STASH_STASH=/data/
+      - STASH_GENERATED=/generated/
+      - STASH_METADATA=/metadata/
+      - STASH_CACHE=/cache/
+      ## Adjust below to change default port (9999)
+      - STASH_PORT=9999
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      ## Adjust below paths (the left part) to your liking.
+      ## E.g. you can change ./config:/root/.stash to ./stash:/root/.stash
+      
+      ## Keep configs, scrapers, and plugins here.
+      - ./stash/config:/root/.stash
+      ## Point this at your collection.
+      - smbornfsdata:/data
+      ## This is where your stash's metadata lives
+      - ./stash/metadata:/metadata
+      ## Any other cache content.
+      - ./stash/cache:/cache
+      ## Where to store generated content (screenshots,previews,transcodes,sprites)
+      - ./stash/generated:/generated
+  
+  xteve: # iptv
+    container_name: xteve
+    image: dnsforge/xteve
+    ports:
+      - 34400:34400
+    volumes:
+      - ./xteve/conf:/home/xteve/conf
+      - ./xteve/guide2go:/home/xteve/guide2go
+    restart: unless-stopped
+  
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    ports:
+      - 8096:8096
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - smbornfsdata:/data
+    restart: "unless-stopped"
+    runtime: nvidia
+
+  # recommended only in router hardware
+  uuplugin: # uu accerater
+    image: blindlight/uuplugin
+    container_name: uuplugin
+    environment:
+      - UU_LAN_IPADDR=10.0.0.244
+      - UU_LAN_GATEWAY=10.0.0.1
+      - UU_LAN_DNS=10.0.0.1
+    privileged: true
+    # volumes:
+    #   - uu_data:/tmp/uu 
+    networks:
+      bridge-host:
+        ipv4_address: 10.0.0.244
+    restart: unless-stopped
+  
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    volumes:
+      - ./adgh/work:/opt/adguardhome/work
+      - ./adgh/conf:/opt/adguardhome/conf
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 80:80
+      - 3000:3000
+    restart: unless-stopped
+    networks:
+      bridge-host:
+        ipv4_address: 10.0.0.243
+
+  bark-server: # bark notification
+    image: finab/bark-server
+    container_name: bark-server
+    restart: always
+    volumes:
+      - ./bark:/data
+    ports:
+      - "18080:8080"
+    environment:
+      - TZ=Asia/Shanghai
+    
+  serverManager: # for dell server fan control
+    container_name: serverManager
+    image: ghcr.io/danielv123/servermanager:latest
+    restart: unless-stopped
+    ports:
+      - 8083:8080 # external:internal
+    volumes:
+      - ./serverManager:/usr/src/app/data
+
+  # iot
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./HA:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    network_mode: host
+  
+  appdaemon_dev:
+    # set a different service name
+    image: blindlight/appdaemon:dev
+    container_name: appdaemon
+    # the image set to blindlight/appdaemon
+    # the tag can be latest(offical AD master branch)
+    # or dev(offcial AD dev branch)
+    environment:
+        HA_URL: "http://10.0.0.75:8123"
+        TOKEN: "TOKEN"
+        DASH_URL: "http://10.0.0.75:5050"
+        SSHPASSWORD: "sshpass"   # set root password for ssh
+        DAEMON: "True"
+        # RSA_PUB: id_rsa-ad-dev.pub # alternatively, if you prefer rsa-key, set this to the rsa public file you create in local machine.
+    volumes:
+        - ./HA/ad:/conf
+        - /etc/localtime:/etc/localtime:ro
+    ports:
+        - 5050:5050
+        - "8022:22" # set the ssh port mapping, don't forget the quotes because yaml recognizes int(a):int(b)<60 as a*60+b
+    restart: unless-stopped
+
+  mqtt-explorer: # mqtt tool
+    container_name: mqtt-explorer
+    image: smeagolworms4/mqtt-explorer
+    ports:
+      - 4000:4000
+    volumes:
+      - mqttex_data://mqtt-explorer/config
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+  
+  # regular services
+  qinglong: # JD
+    container_name: qinglong
+    hostname: qinglong
+    image: whyour/qinglong
+    restart: unless-stopped
+    environment: 
+      - ENABLE_HANGUP=true
+    volumes: 
+      - ./ql/config:/ql/config
+      - ./ql/log:/ql/log
+      - ./ql/db:/ql/db
+      - ./ql/scripts:/ql/scripts
+      - ./ql/repo:/ql/repo
+    ports:
+      - 5700:5700
+  
+  bililive: # Bilibili 1
+    container_name: bililive
+    build: ./bililive/bili-live-heart
+    volumes:
+      - ./bililive/user.toml:/user.toml
+  
+  bilibili-helper: # Bilibili 2
+    image: superng6/bilibili-helper:latest
+    container_name: bilibili-helper
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Asia/Shanghai
+      # CRON=false，使用sleep;true,定时10.30运行；random，6-24时随机运行
+      - CRON=random
+    volumes:
+      - ./bilbilihelper/config:/config
+    restart: unless-stopped
+
+  gitlab:
+    image: 'gitlab/gitlab-ee:latest'
+    container_name: gitlab
+    # restart: unless-stopped
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://10.0.0.75'
+        gitlab_rails['gitlab_shell_ssh_port'] = 10022
+    ports:
+      - '80:80'
+      - '10443:10443'
+      - '10022:22'
+    volumes:
+      - './gitlab/config:/etc/gitlab'
+      - './gitlab/logs:/var/log/gitlab'
+      - './gitlab/data:/var/opt/gitlab'
+    shm_size: '256m'
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+
+  vrising_server:
+    image: ich777/steamcmd:vrising
+    container_name: vrising_server
+    environment:
+      GAME_ID: 1829350
+      SERVER_NAME: Blindlight V Rising
+      UID: 99
+      GID: 100
+    ports:
+      - 9876-9877:9876-9877/udp
+    volumes:
+      - ./vr/steamcmd:/serverdata/steamcmd
+      - ./vr/server:/serverdata/serverfiles
+    restart: unless-stopped
+
+volumes:
+  portainer_data: # for portainer
+  mqttex_data: # for mqtt-explorer
+  smbornfsdata: # for grabber and downloader
+    driver: local
+    driver_opts: # smb
+        type: cifs
+        device: \\10.0.0.101\data
+        o: username=user,password=password,vers=2.0,file_mode=0777,dir_mode=0777
+    # driver_opts: # nfs
+    #   type: "nfs"
+    #   o: "addr=10.0.0.101,nfsvers=4"
+    #   device: ":/path/to/data"
+
+networks:
+  bridge-host: # for uuplugin and adgh
+    name: bridge-host
+    driver: macvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
+          ip_range: 10.0.0.0/24
+          gateway: 10.0.0.1
